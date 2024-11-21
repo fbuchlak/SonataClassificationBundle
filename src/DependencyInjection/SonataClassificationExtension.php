@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Sonata\ClassificationBundle\DependencyInjection;
 
+use Doctrine\ORM\EntityManager;
 use Sonata\Doctrine\Mapper\Builder\OptionsBuilder;
 use Sonata\Doctrine\Mapper\DoctrineCollector;
 use Symfony\Component\Config\Definition\Processor;
@@ -133,11 +134,15 @@ final class SonataClassificationExtension extends Extension
                 ->addOrder('position', 'ASC')
         );
 
+        $categoryCascade = ['persist', 'refresh', 'detach'];
+        if (class_exists(EntityManager::class) && method_exists(EntityManager::class, 'merge')) { // @phpstan-ignore-line
+            $categoryCascade[] = 'merge';
+        }
         $collector->addAssociation(
             $config['class']['category'],
             'mapManyToOne',
             OptionsBuilder::createManyToOne('parent', $config['class']['category'])
-                ->cascade(['persist', 'refresh', 'merge', 'detach'])
+                ->cascade($categoryCascade)
                 ->inversedBy('children')
                 ->addJoin([
                     'name' => 'parent_id',
